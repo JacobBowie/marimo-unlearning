@@ -1,0 +1,16 @@
+# Compute env for scripts/precompute_hf.py (the v0.2 measured-weights job).
+#
+# SEPARATE from the WASM bundle's env (pyproject.toml + uv.lock; altair / pandas /
+# networkx / marimo). These deps run ONCE on a GPU (Databricks preferred), never
+# in the browser bundle. Do not merge them into the bundle env; it must stay
+# pure-Python and small for Pyodide.
+#
+# On a Databricks ML GPU runtime, torch is usually preinstalled; the loose pins
+# below defer to whatever the runtime ships. HF_TOKEN (Meta-approved) is needed
+# for the gated baseline, not for the ungated WHP checkpoint.
+
+transformers>=4.44
+torch>=2.3
+accelerate>=0.33
+huggingface_hub>=0.24
+sentencepiece>=0.2

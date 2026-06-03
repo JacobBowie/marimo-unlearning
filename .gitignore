@@ -1,0 +1,42 @@
+# Build output
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# marimo
+__marimo__/
+.marimo/
+
+# Environments / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Docker
+.docker/
+
+# Polish punch list — local-only working notes
+POLISH_PUNCHLIST.md
+
+# Internal / AI-assist / workflow docs — keep local, NEVER publish.
+# Policy (2026-06-03): gitignore any Claude / internal-workflow doc before a
+# public push, and scrub it from history (gitignore alone leaves it in history).
+CLAUDE.md
+_PORTFOLIO_BRIEF.md
+claims/
+notes/
+deploy/HANDOFF.md
+deploy/NETLIFY_HANDOFF.md

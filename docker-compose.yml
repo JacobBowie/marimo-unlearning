@@ -1,0 +1,14 @@
+services:
+  marimo:
+    build: .
+    container_name: marimo_unlearning
+    ports:
+      - "2718:2718"
+    volumes:
+      # Bind-mount the project so edits in the browser persist on the host.
+      - ./:/app
+    working_dir: /app
+    # Optional: pass an HF token if you want the precompute scripts to work
+    # from inside the container. Uncomment + create a `.env` file.
+    # env_file:
+    #   - .env

@@ -1,0 +1,22 @@
+[project]
+name = "marimo-unlearning"
+version = "0.1.0"
+description = "Interactive marimo walkthrough of Eldan and Russinovich (2023), Who's Harry Potter? Approximate Unlearning in LLMs."
+requires-python = ">=3.11"
+# Pins carried over from the former requirements.txt, with their rationale:
+dependencies = [
+    "marimo==0.23.3",   # CVE-2026-39987 (pre-auth RCE in <=0.20.4); pin >=0.23.0, 0.23.3 known-good
+    "altair==5.5.0",    # host parity; Pyodide 0.27.x bundles Altair 5.4, notebook guards with hasattr
+    "pandas==2.2.3",
+    "networkx==3.4.2",
+]
+# Note: huggingface_hub was pinned in requirements.txt but the notebook never
+# imports it (only marimo/altair/pandas/networkx). Dropped as dead weight.
+# The precompute job's heavy deps (torch/transformers/...) live in
+# scripts/requirements-precompute.txt and are NOT part of this env: they run on
+# Databricks, never in the WASM bundle. See ROADMAP.md.
+
+[tool.uv]
+# Single-file notebook, not a distributable package. Do not build or install
+# the repo itself; uv only needs to manage the dependency env.
+package = false

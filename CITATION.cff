@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+title: >-
+  Who's Harry Potter? An interactive walk through approximate
+  unlearning in LLMs
+message: >-
+  If you use this notebook or its code in your own work, please
+  cite it as below. The original research paper being explained
+  has its own citation; see the references section.
+type: software
+authors:
+  - given-names: Jacob
+    family-names: Bowie
+    email: jacob.bowie2@gmail.com
+    affiliation: University of Connecticut
+abstract: >-
+  An interactive marimo notebook explaining Eldan & Russinovich's
+  2023 paper "Who's Harry Potter? Approximate Unlearning in LLMs."
+  The headline visualization frames the unlearning mechanism as
+  edge surgery on the model's knowledge graph: the algorithm
+  removes specific learned associations between entities while
+  leaving the surrounding language graph intact. Runs entirely in
+  the browser via Pyodide.
+keywords:
+  - large language models
+  - machine unlearning
+  - interpretability
+  - interactive notebook
+  - marimo
+  - reactive notebook
+  - explainer
+  - portfolio
+license: MIT
+license-url: https://opensource.org/licenses/MIT
+repository-code: 'https://github.com/JacobBowie/marimo-unlearning'
+url: 'https://github.com/JacobBowie/marimo-unlearning'
+date-released: '2026-04-27'
+references:
+  - type: article
+    title: 'Who''s Harry Potter? Approximate Unlearning in LLMs'
+    authors:
+      - given-names: Ronen
+        family-names: Eldan
+      - given-names: Mark
+        family-names: Russinovich
+    year: 2023
+    url: 'https://arxiv.org/abs/2310.02238'
+    notes: >-
+      The source paper this notebook explains. Cite this in
+      addition to the notebook itself when referring to the
+      underlying technique.

@@ -1,0 +1,55 @@
+name: lint + WASM build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: marimo check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # setup-uv@v3 per the python-env SOP; bump to the latest major at will.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Sync env (locked)
+        run: uv sync --locked
+      - name: marimo check (main notebook)
+        run: uv run marimo check notebook.py
+      - name: marimo check (sketches, non-blocking)
+        continue-on-error: true
+        run: |
+          uv run marimo check sketches/comparison.py
+          uv run marimo check sketches/d3_force_skeleton.py
+
+  wasm-build:
+    name: WASM export
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Sync env (locked)
+        run: uv sync --locked
+      - name: Export WASM bundle
+        run: |
+          uv run marimo export html-wasm notebook.py \
+            -o dist/unlearning/index.html \
+            --mode run
+          rm -f dist/unlearning/CLAUDE.md
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unlearning-wasm
+          path: dist/unlearning/
+          retention-days: 30
