@@ -33,7 +33,9 @@ license: MIT
 license-url: https://opensource.org/licenses/MIT
 repository-code: 'https://github.com/JacobBowie/marimo-unlearning'
 url: 'https://github.com/JacobBowie/marimo-unlearning'
-date-released: '2026-04-27'
+version: v0.1.0
+doi: 10.5281/zenodo.20534237
+date-released: '2026-06-03'
 references:
   - type: article
     title: 'Who''s Harry Potter? Approximate Unlearning in LLMs'

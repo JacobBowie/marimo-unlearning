@@ -1,5 +1,6 @@
 # Who's Harry Potter? A marimo walkthrough
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20534237.svg)](https://doi.org/10.5281/zenodo.20534237)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Content: CC BY 4.0](https://img.shields.io/badge/content-CC%20BY%204.0-lightgrey.svg)](LICENSE-CONTENT.md)
 [![lint + WASM build](https://github.com/JacobBowie/marimo-unlearning/actions/workflows/lint-and-build.yml/badge.svg)](https://github.com/JacobBowie/marimo-unlearning/actions/workflows/lint-and-build.yml)
