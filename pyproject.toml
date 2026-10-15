@@ -1,6 +1,6 @@
 [project]
 name = "marimo-unlearning"
-version = "0.1.0"
+version = "0.1.1"
 description = "Interactive marimo walkthrough of Eldan and Russinovich (2023), Who's Harry Potter? Approximate Unlearning in LLMs."
 requires-python = ">=3.11"
 # Pins carried over from the former requirements.txt, with their rationale:

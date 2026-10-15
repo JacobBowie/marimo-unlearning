@@ -10,7 +10,8 @@ v0.3 (WebLLM) is a scoped alternate.**
 
 | Version | Milestone | State |
 |---|---|---|
-| v0.1.0 | Illustrative hero weights, 9 sections, self-contained WASM bundle | shipping |
+| v0.1.0 | Illustrative hero weights, 9 sections, self-contained WASM bundle | shipped |
+| v0.1.1 | Autoplay control fix, loading splash, phone layout, chart palettes | shipping |
 | v0.2.0 | Measured hero weights from the released checkpoint (Databricks) | seam built, job runnable, awaiting one GPU run |
 | v0.3.0 | One live in-browser forward pass (WebLLM surrogate), opt-in | scoped alternate, not built |
 
