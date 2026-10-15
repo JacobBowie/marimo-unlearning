@@ -126,9 +126,53 @@ for _s, _t2, _w0, _w120 in EDGES:
     })
 edge_df = pd.DataFrame(edge_rows)
 
+# --- label placement ---------------------------------------------------------
+# Labels sit above their node by default. Where two would overlap (nodes nearly
+# on top of each other at this step, e.g. magic/wizard), the later one moves
+# below its node; node positions never change. Explicit, un-niced scale domains
+# make the data -> pixel mapping exact, so this overlap test matches the image.
+W, H = 1200, 600
+_xs, _ys = node_df["x"], node_df["y"]
+_pad_x = 0.04 * (_xs.max() - _xs.min())
+_pad_y = 0.08 * (_ys.max() - _ys.min())
+X_DOMAIN = [_xs.min() - _pad_x, _xs.max() + _pad_x]
+Y_DOMAIN = [_ys.min() - _pad_y, _ys.max() + _pad_y]
+X_SCALE = alt.Scale(domain=X_DOMAIN, nice=False, zero=False)
+Y_SCALE = alt.Scale(domain=Y_DOMAIN, nice=False, zero=False)
+LABEL_ABOVE, LABEL_BELOW = -16, 20  # text dy in px
+CHAR_W, LABEL_H = 7.8, 16           # rough box for 13 px bold text
+
+
+def _label_box(row, dy):
+    cx = (row.x - X_DOMAIN[0]) / (X_DOMAIN[1] - X_DOMAIN[0]) * W
+    cy = (Y_DOMAIN[1] - row.y) / (Y_DOMAIN[1] - Y_DOMAIN[0]) * H + dy
+    half_w = (len(row.label) * CHAR_W + 6) / 2
+    return (cx - half_w, cy - LABEL_H / 2, cx + half_w, cy + LABEL_H / 2)
+
+
+def _overlaps(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+_placed, _below, _unresolved = [], [], []
+for _row in node_df.sort_values("y", ascending=False).itertuples():
+    _up = _label_box(_row, LABEL_ABOVE)
+    if not any(_overlaps(_up, p) for p in _placed):
+        _placed.append(_up)
+        continue
+    _down = _label_box(_row, LABEL_BELOW)
+    if not any(_overlaps(_down, p) for p in _placed):
+        _placed.append(_down)
+        _below.append(_row.label)
+    else:
+        _placed.append(_up)
+        _unresolved.append(_row.label)
+node_df["below"] = node_df["label"].isin(_below)
+
 edges = (
     alt.Chart(edge_df).mark_rule().encode(
-        x=alt.X("x:Q", axis=None), y=alt.Y("y:Q", axis=None),
+        x=alt.X("x:Q", axis=None, scale=X_SCALE),
+        y=alt.Y("y:Q", axis=None, scale=Y_SCALE),
         x2="x2:Q", y2="y2:Q",
         strokeWidth=alt.StrokeWidth("weight:Q",
             scale=alt.Scale(domain=[0, 1], range=[0.8, 6.5]), legend=None),
@@ -141,16 +185,24 @@ edges = (
 )
 nodes = (
     alt.Chart(node_df).mark_circle(size=560, stroke="white", strokeWidth=2).encode(
-        x="x:Q", y="y:Q",
+        x=alt.X("x:Q", axis=None, scale=X_SCALE),
+        y=alt.Y("y:Q", axis=None, scale=Y_SCALE),
         color=alt.Color("zone:N",
             scale=alt.Scale(domain=list(ZONE_PALETTE), range=list(ZONE_PALETTE.values())),
             legend=None),
     )
 )
-labels = (
-    alt.Chart(node_df).mark_text(dy=-16, fontSize=13, fontWeight="bold").encode(
-        x="x:Q", y="y:Q", text="label:N")
-)
+
+
+def _label_layer(df, dy):
+    return alt.Chart(df).mark_text(dy=dy, fontSize=13, fontWeight="bold").encode(
+        x=alt.X("x:Q", axis=None, scale=X_SCALE),
+        y=alt.Y("y:Q", axis=None, scale=Y_SCALE),
+        text="label:N")
+
+
+labels = (_label_layer(node_df[~node_df["below"]], LABEL_ABOVE)
+          + _label_layer(node_df[node_df["below"]], LABEL_BELOW))
 
 chart = (
     (edges + nodes + labels)
@@ -160,7 +212,7 @@ chart = (
     # are the true zone colors and only the edge legend shows (nodes set
     # legend=None).
     .resolve_scale(color="independent")
-    .properties(width=1200, height=600, background="#fafbfc")
+    .properties(width=W, height=H, background="#fafbfc")
     .configure_axis(grid=False)
     .configure_view(stroke=None)
 )
@@ -168,3 +220,6 @@ chart = (
 OUT.parent.mkdir(parents=True, exist_ok=True)
 chart.save(str(OUT), scale_factor=2.0)
 print(f"wrote {OUT} (step {STEP}, {len(edge_rows)} edges drawn). VERIFY IT VISUALLY.")
+print(f"labels moved below their node: {_below or 'none'}")
+if _unresolved:
+    print(f"WARNING: labels still overlapping above and below: {_unresolved}")
