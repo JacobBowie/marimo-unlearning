@@ -26,6 +26,22 @@ uv run marimo export html-wasm notebook.py \
 # into the bundle. It serves no purpose on a public site, so drop it.
 rm -f "$REPO_ROOT/dist/unlearning/CLAUDE.md"
 
+# marimo's "Loading marimo..." shows only briefly; the page then stays blank
+# until the cells paint (30 to 60 s on a first visit). Insert a static loading
+# splash right after #root (outside it, so React's mount cannot wipe it). Fail
+# loudly if a marimo upgrade moved the anchor, rather than ship without the cue.
+INDEX="$REPO_ROOT/dist/unlearning/index.html"
+ANCHOR='<div id="root"></div>'
+if [ "$(grep -c "$ANCHOR" "$INDEX")" != "1" ]; then
+  echo "✗ expected exactly one '$ANCHOR' in $INDEX (marimo template changed?)" >&2
+  exit 1
+fi
+awk -v f="$REPO_ROOT/deploy/loading_splash.html" \
+  '{ print } index($0, "<div id=\"root\"></div>") { while ((getline l < f) > 0) print l }' \
+  "$INDEX" > "$INDEX.tmp"
+mv "$INDEX.tmp" "$INDEX"
+echo "→ Loading splash inserted after #root."
+
 echo
 echo "→ Bundle ready at:  $REPO_ROOT/dist/unlearning/"
 echo "→ Smoke-test locally:"
