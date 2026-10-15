@@ -15,8 +15,8 @@ the paper that taught Llama-2-7B to forget Harry Potter without retraining
 from scratch. Built as a portfolio piece using marimo's reactive notebook
 framework; runs entirely in the browser via WebAssembly.
 
-> 🔗 **Live notebook:** deploying to `jacobbowie.com/unlearning`. For now, clone
-> and run it locally (see below), or build the in-browser WASM bundle yourself.
+> 🔗 **Live notebook:** [jacobbowie.com/unlearning](https://jacobbowie.com/unlearning/).
+> It runs entirely in your browser; the first visit takes 30 to 60 seconds to load.
 
 ## What this notebook is for
 
@@ -48,14 +48,12 @@ this walkthrough sits on top of it.
 
 ```
 notebook.py                  the polished walkthrough (single-file, self-contained)
-claims/
-  manuscript_claims.json     catalog of every citation-bearing claim, used during
-                             the citation-base audit prior to public release
 deploy/
   citations.md               verified citations + per-claim spot-checks against
                              the source paper and HF model card
-  HANDOFF.md                 brief for the portfolio agent (case-study integration)
-  build_wasm.sh              one-command WASM export via Docker
+  build_wasm.sh              one-command WASM export (uv), plus the loading splash
+  loading_splash.html        static "Loading the notebook" cue for the first-visit wait
+  tests/wasm_smoke.py        headless-browser render gate for the exported bundle
   case_study_unlearning.qmd  drop-in Quarto template for embedding the notebook
   og_metadata.html           Open Graph + Twitter card meta tags
   social_card_brief.md       spec for the 1200×630 social preview image
@@ -76,7 +74,6 @@ docker-compose.yml           one-command local dev (optional)
 LICENSE                      MIT (code)
 LICENSE-CONTENT.md           CC BY 4.0 (notebook prose, narrative, visualizations)
 CITATION.cff                 cite-this-repository metadata (renders on GitHub)
-CLAUDE.md                    orientation for any Claude session in this repo
 README.md                    this file
 ```
 
@@ -114,21 +111,19 @@ uv run marimo check notebook.py
 
 ## Deploying
 
-The canonical surface for this notebook is the standalone Netlify deploy
-configured outside this repo (handled by the Netlify integration on push
-to `main`). The build artifact lives at `dist/unlearning/` and is
-regenerated on every successful CI run.
+The live copy is served at [jacobbowie.com/unlearning](https://jacobbowie.com/unlearning/).
+That site pulls the `unlearning-wasm.tar.gz` asset from this repo's GitHub
+release at build time, so shipping a change means cutting a release with a
+rebuilt bundle. CI also exports the bundle on every push to `main`, as a
+short-lived build artifact.
 
-For embedding into a larger portfolio site as a case-study page, see
-`deploy/HANDOFF.md`.
-
-To rebuild the bundle locally:
+To rebuild and test the bundle locally:
 
 ```bash
 bash deploy/build_wasm.sh
 # produces dist/unlearning/  (gitignored, regenerable)
-# smoke test:
-python -m http.server --directory dist/unlearning 8000
+python -m http.server 8137 --directory dist/unlearning &
+SMOKE_URL=http://127.0.0.1:8137/ uv run --script deploy/tests/wasm_smoke.py
 ```
 
 ## Extending the cached data
