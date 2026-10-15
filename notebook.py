@@ -501,21 +501,23 @@ def _(mo, set_frame):
 
 @app.cell
 def _(mo):
-    # Autoplay driver. mo.ui.refresh ticks on its interval; "off" stops
-    # ticking entirely. Each tick re-runs the advance cell below.
+    # Autoplay driver. mo.ui.refresh ticks on its interval. The browser adds
+    # its own "off" entry (the default), so options list only real intervals,
+    # and each must be at least 0.1s or marimo shows a "Bad Data" alert.
+    # Each tick re-runs the advance cell below.
     playback = mo.ui.refresh(
-        options=["off", "0.18s", "0.08s"],
-        default_interval="off",
+        options=["0.18s", "0.1s"],
         label="▶ autoplay",
     )
     return (playback,)
 
 
 @app.cell
-def _(playback, set_frame):
+def _(mo, playback, set_frame):
     # Advance the frame on each refresher tick, wrapping at 120 → 0 so
-    # the loop is continuous. Only fires while autoplay is not "off".
-    playback.value  # depend on the tick counter
+    # the loop is continuous. The value is "" until the first tick, so the
+    # stop keeps page load from advancing the chart past the slider's 0.
+    mo.stop(not playback.value)
     set_frame(lambda f: (f + 2) if f < 120 else 0)
     return
 
@@ -590,7 +592,8 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
                     domain=list(_edge_palette.keys()),
                     range=list(_edge_palette.values()),
                 ),
-                legend=alt.Legend(title="edge", orient="bottom"),
+                legend=alt.Legend(title="edge", orient="bottom",
+                                  direction="vertical"),
             ),
             tooltip=["src", "tgt", "kind",
                      alt.Tooltip("weight:Q", format=".2f")],
@@ -610,7 +613,8 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
                     domain=list(_zone_palette.keys()),
                     range=list(_zone_palette.values()),
                 ),
-                legend=alt.Legend(title="node", orient="bottom"),
+                legend=alt.Legend(title="node", orient="bottom",
+                                  direction="vertical"),
             ),
             tooltip=["label", "zone"],
         )
@@ -624,8 +628,13 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
 
     # This chart is a node-link diagram (no quantitative axes), so we
     # override the prism_lite y-grid that helps the line/bar charts.
+    # Layers share one color scale by default, which merged the edge kinds
+    # with the node zones and painted bridge nodes gray and general nodes
+    # green. Independent scales keep the amber/blue zone palette above, and
+    # the two vertical legends sit side by side even at phone width.
     _chart = (
         (_edges + _nodes + _labels)
+        .resolve_scale(color="independent")
         .properties(
             width="container", height=560,
             title=f"Knowledge graph around 'Harry'  ·  step {_s}",
@@ -1181,10 +1190,10 @@ def _(alt, familiarity_benchmarks, mo, pd):
                     scale=alt.Scale(domain=[0, 0.32])),
             color=alt.Color("metric:N",
                 scale=alt.Scale(range=_fam_palette),
-                legend=alt.Legend(orient="bottom", title=None)),
+                legend=alt.Legend(orient="bottom", title=None, columns=1)),
             tooltip=["metric", "step", alt.Tooltip("score:Q", format=".3f")],
         )
-        .properties(width=320, height=260,
+        .properties(width=250, height=260,
                     title="Familiarity (LOWER = more forgotten)")
     )
 
@@ -1197,18 +1206,20 @@ def _(alt, familiarity_benchmarks, mo, pd):
                     scale=alt.Scale(domain=[0.30, 0.85])),
             color=alt.Color("metric:N",
                 scale=alt.Scale(range=_bench_palette),
-                legend=alt.Legend(orient="bottom", title=None, columns=4)),
+                legend=alt.Legend(orient="bottom", title=None, columns=2)),
             tooltip=["metric", "step", alt.Tooltip("score:Q", format=".3f")],
         )
-        .properties(width=320, height=260,
+        .properties(width=250, height=260,
                     title="General benchmarks (want to preserve)")
     )
 
-    # chart_selection / legend_selection are disabled because the two
-    # concatenated charts share a `metric` color field; marimo's auto-added
-    # legend-selection signal collides across the concat ("Duplicate signal
-    # name: legend_selection_metric_tuple"). Tooltips are unaffected.
-    mo.ui.altair_chart(_fam | _bench, chart_selection=False, legend_selection=False)
+    # Two separate charts rather than `_fam | _bench`. A concat shares one
+    # color scale, which painted the benchmark lines in the familiarity reds
+    # under one merged legend (and made marimo's legend-selection signal
+    # collide across the panels). Separate specs keep each palette and
+    # legend; wrap=True puts them side by side on desktop and stacks them
+    # on a phone.
+    mo.hstack([_fam, _bench], justify="center", wrap=True, gap=2)
     return
 
 
