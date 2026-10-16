@@ -12,11 +12,12 @@ jobs:
     name: marimo check
     runs-on: ubuntu-latest
     steps:
-      # Node-24 majors (checkout v7, setup-uv v10, upload-artifact v7), bumped
-      # 2026-10-16 after GitHub deprecated the Node 20 runtime.
+      # Node-24 majors (checkout v7, setup-uv v10.3.0, upload-artifact v7), bumped
+      # 2026-10-16 after GitHub deprecated the Node 20 runtime. setup-uv publishes
+      # only full version tags (no moving v10), so it is pinned to the release.
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       - name: Sync env (locked)
@@ -37,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
       # The real build script, not a copy of its export line: it also strips
