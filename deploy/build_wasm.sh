@@ -22,9 +22,9 @@ uv run marimo export html-wasm notebook.py \
   -o dist/unlearning/index.html \
   --mode run
 
-# marimo's WASM export ships a "Marimo notebook assistant" CLAUDE.md scaffold
+# marimo's WASM export can ship a "Marimo notebook assistant" CLAUDE.md (or AGENTS.md) scaffold
 # into the bundle. It serves no purpose on a public site, so drop it.
-rm -f "$REPO_ROOT/dist/unlearning/CLAUDE.md"
+rm -f "$REPO_ROOT/dist/unlearning/CLAUDE.md" "$REPO_ROOT/dist/unlearning/AGENTS.md"
 
 # marimo's "Loading marimo..." shows only briefly; the page then stays blank
 # until the cells paint (30 to 60 s on a first visit). Insert a static loading
