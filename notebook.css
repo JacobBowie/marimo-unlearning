@@ -1,0 +1,18 @@
+/* Bigger touch targets on touch screens (pointer: coarse). marimo's default
+   slider thumb (~14 px) and autoplay control (~22 px) are under the 24 px
+   WCAG 2.5.8 minimum for touch. Mouse users see no change.
+   marimo copies page stylesheets into each widget's shadow root, which is how
+   these rules reach the controls; `marimo export html-wasm` inlines this file. */
+@media (pointer: coarse) {
+  [role="slider"] {
+    width: 24px;
+    height: 24px;
+  }
+  [data-testid="marimo-plugin-refresh-button"],
+  [data-testid="marimo-plugin-refresh-select"] {
+    min-height: 32px;
+  }
+  [data-testid="marimo-plugin-refresh-button"] {
+    min-width: 32px;
+  }
+}

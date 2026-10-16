@@ -4,6 +4,7 @@ __generated_with = "0.10.0"
 app = marimo.App(
     width="medium",
     app_title="Who's Harry Potter? An Interactive Walkthrough",
+    css_file="notebook.css",
 )
 
 
