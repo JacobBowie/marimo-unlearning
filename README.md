@@ -48,24 +48,29 @@ this walkthrough sits on top of it.
 
 ```
 notebook.py                  the polished walkthrough (single-file, self-contained)
+notebook.css                 larger touch targets for the controls on phones
 deploy/
-  citations.md               verified citations + per-claim spot-checks against
-                             the source paper and HF model card
   build_wasm.sh              one-command WASM export (uv), plus the loading splash
   loading_splash.html        static "Loading the notebook" cue for the first-visit wait
   tests/wasm_smoke.py        headless-browser render gate for the exported bundle
-  case_study_unlearning.qmd  drop-in Quarto template for embedding the notebook
-  og_metadata.html           Open Graph + Twitter card meta tags
-  social_card_brief.md       spec for the 1200×630 social preview image
+  citations.md               verified citations + per-claim spot-checks against
+                             the source paper and HF model card
+  hero.png                   static hero image (README, portfolio page)
+  social-card.png            1200×630 link-preview card (GitHub social preview)
+  social_card_brief.md       spec for that card
   description_snippets.md    portfolio / social / HN copy at three lengths
 sketches/
   comparison.py              six visualization approaches in one file (dev scratch)
   d3_force_skeleton.py       d3-force HTML embed proof-of-concept
   SKETCHES_README.md         which viz won and why
 scripts/
-  precompute_hf.py           extend cached completions via the released checkpoint
-                             (sketched; Databricks is the cleanest compute path)
+  precompute_hf.py           v0.2 job: measures the hero edge weights from the
+                             baseline and unlearned models (Databricks; --dry-run)
+  requirements-precompute.txt  that job's GPU environment (separate from uv.lock)
   precompute_local.py        toy gpt2 version of the unlearning pipeline (CPU-OK)
+  render_hero.py             regenerates hero.png and social-card.png from the
+                             notebook's data
+ROADMAP.md                   version ladder and decision log (v0.2 measured weights)
 pyproject.toml               project + pinned deps (uv-managed)
 uv.lock                      locked, reproducible env (committed)
 Dockerfile                   optional uv image + marimo edit on :2718
@@ -135,19 +140,21 @@ scores) are taken verbatim from the paper. Both the notebook and
 
 To replace illustrative weights with measured ones:
 
-- `scripts/precompute_hf.py`: skeleton script that should hit the released
-  `microsoft/Llama2-7b-WhoIsHarryPotter` checkpoint over a curated cloze
-  probe set, capture top-k softmax probabilities, and emit JSON that the
-  notebook can load. The cleanest compute path is a one-time Databricks
-  job using `transformers.AutoModelForCausalLM` with
-  `generate(..., output_scores=True)`. The released checkpoint is ungated
-  under the Microsoft Research License Agreement; no Llama-2 gate dance
-  required for this fine-tune specifically.
+- `scripts/precompute_hf.py`: a runnable job that measures each edge as the
+  probability of its target word after a cloze prompt (the paper's Figure 3
+  method), once on the baseline `meta-llama/Llama-2-7b-chat-hf` (step 0) and
+  once on the unlearned `microsoft/Llama2-7b-WhoIsHarryPotter` (step 120). Its
+  JSON drops into the notebook's `MEASURED_EDGES` cell, and the disclosure
+  text flips to "measured" automatically. The unlearned checkpoint is ungated
+  (Microsoft Research License); the **baseline is gated by Meta**, so accept its
+  license on Hugging Face and set `HF_TOKEN` first. Run `--dry-run` (no GPU,
+  no download) to check cloze-template coverage before spending compute; the
+  intended compute path is one single-GPU Databricks run.
 - `scripts/precompute_local.py`: small gpt2-based toy pipeline for
   development and pedagogy; not used in the published notebook.
 
-This is v0.2 work. The v0.1 notebook ships with illustrative weights and
-explicit disclosure of that fact.
+This is v0.2 work (see `ROADMAP.md`). The v0.1.x notebook ships with
+illustrative weights and explicit disclosure of that fact.
 
 ## Tech
 
