@@ -1248,7 +1248,7 @@ def _(alt, familiarity_benchmarks, mo, pd):
             })
     _df = pd.DataFrame(_rows)
 
-    _fam_palette  = ["#E8523A", "#F4664A"]
+    _fam_palette  = ["#E8523A", "#9E1B32"]   # completion red, probabilities crimson
     _bench_palette = ["#5B8FF9", "#5AD8A6", "#9BB0FF", "#F4A742",
                       "#9DA8B8", "#7FBFA0", "#C28BC4"]
 
@@ -1261,6 +1261,11 @@ def _(alt, familiarity_benchmarks, mo, pd):
                     scale=alt.Scale(domain=[0, 0.32])),
             color=alt.Color("metric:N",
                 scale=alt.Scale(range=_fam_palette),
+                legend=alt.Legend(orient="bottom", title=None, columns=1)),
+            # Both series are familiarity (red family); a dash on the
+            # probabilities series keeps them apart without leaving the palette.
+            strokeDash=alt.StrokeDash("metric:N",
+                scale=alt.Scale(range=[[1, 0], [6, 3]]),
                 legend=alt.Legend(orient="bottom", title=None, columns=1)),
             tooltip=["metric", "step", alt.Tooltip("score:Q", format=".3f")],
         )
