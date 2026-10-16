@@ -471,8 +471,51 @@ def _(graph_edges, graph_nodes, nx):
             for n in pos0
         }
 
+    # Fixed axis domains for the hero chart. Every frame is a blend of pos0
+    # and pos120, so their joint bounding box holds every frame; fixed
+    # domains stop the graph re-zooming as the slider moves.
+    _all = list(pos0.values()) + list(pos120.values())
+    _xs, _ys = [p[0] for p in _all], [p[1] for p in _all]
+    _pad_x, _pad_y = 0.05 * (max(_xs) - min(_xs)), 0.06 * (max(_ys) - min(_ys))
+    hero_x_domain = [min(_xs) - _pad_x, max(_xs) + _pad_x]
+    hero_y_domain = [min(_ys) - _pad_y, max(_ys) + _pad_y]
+
+    # Label placement. Labels sit above their node unless that would overlap
+    # another label on a phone-width plot (~330 px, where the chart also
+    # shrinks label text to 8.5 px); those go below. Decided once from the
+    # two endpoint layouts, so no label flips sides mid-autoplay. Sampling
+    # every frame flagged nearly every label (mid-transition frames are
+    # dense), so endpoints are the deliberate compromise.
+    _W, _H, _above, _below = 330, 560, -14, 15
+
+    def _label_box(name, xy, dy):
+        cx = (xy[0] - hero_x_domain[0]) / (hero_x_domain[1] - hero_x_domain[0]) * _W
+        cy = (hero_y_domain[1] - xy[1]) / (hero_y_domain[1] - hero_y_domain[0]) * _H + dy
+        half_w = len(name) * 4.8 / 2
+        return (cx - half_w, cy - 4.5, cx + half_w, cy + 4.5)
+
+    def _overlap(a, b):
+        return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+    hero_labels_below = set()
+    for _pass in range(5):
+        _changed = False
+        for _step in (0, 120):
+            _p = interp_pos(_step)
+            _placed = []
+            for _n in sorted(_p, key=lambda n, p=_p: -p[n][1]):
+                _box = _label_box(_n, _p[_n], _below if _n in hero_labels_below else _above)
+                if _n not in hero_labels_below and any(_overlap(_box, q) for q in _placed):
+                    _down = _label_box(_n, _p[_n], _below)
+                    if not any(_overlap(_down, q) for q in _placed):
+                        hero_labels_below.add(_n)
+                        _box, _changed = _down, True
+                _placed.append(_box)
+        if not _changed:
+            break
+
     edge_weight_at = _w_at
-    return edge_weight_at, interp_pos
+    return edge_weight_at, hero_labels_below, hero_x_domain, hero_y_domain, interp_pos
 
 
 @app.cell
@@ -529,9 +572,23 @@ def _(mo, playback, scrub):
 
 
 @app.cell
-def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, pd):
+def _(
+    alt,
+    edge_weight_at,
+    get_frame,
+    graph_edges,
+    graph_nodes,
+    hero_labels_below,
+    hero_x_domain,
+    hero_y_domain,
+    interp_pos,
+    mo,
+    pd,
+):
     _s = get_frame()
     _pos = interp_pos(_s)
+    _x_scale = alt.Scale(domain=hero_x_domain, nice=False, zero=False)
+    _y_scale = alt.Scale(domain=hero_y_domain, nice=False, zero=False)
 
     _zone_palette = {
         "hp":      "#E8523A",   # red: book-specific, slated for unlinking
@@ -540,7 +597,8 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
     }
 
     _node_df = pd.DataFrame([
-        {"label": _l, "zone": _z, "x": _pos[_l][0], "y": _pos[_l][1]}
+        {"label": _l, "zone": _z, "x": _pos[_l][0], "y": _pos[_l][1],
+         "below": _l in hero_labels_below}
         for _l, _z in graph_nodes
     ])
 
@@ -573,8 +631,8 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
         alt.Chart(_edge_df)
         .mark_rule()
         .encode(
-            x=alt.X("x:Q", axis=None),
-            y=alt.Y("y:Q", axis=None),
+            x=alt.X("x:Q", axis=None, scale=_x_scale),
+            y=alt.Y("y:Q", axis=None, scale=_y_scale),
             x2="x2:Q", y2="y2:Q",
             strokeWidth=alt.StrokeWidth(
                 "weight:Q",
@@ -606,7 +664,8 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
         alt.Chart(_node_df)
         .mark_circle(size=320, stroke="white", strokeWidth=1.5)
         .encode(
-            x="x:Q", y="y:Q",
+            x=alt.X("x:Q", axis=None, scale=_x_scale),
+            y=alt.Y("y:Q", axis=None, scale=_y_scale),
             color=alt.Color(
                 "zone:N",
                 scale=alt.Scale(
@@ -620,11 +679,23 @@ def _(alt, edge_weight_at, get_frame, graph_edges, graph_nodes, interp_pos, mo, 
         )
     )
 
-    _labels = (
-        alt.Chart(_node_df)
-        .mark_text(dy=-14, fontSize=10, fontWeight="bold")
-        .encode(x="x:Q", y="y:Q", text="label:N")
-    )
+    def _label_layer(df, dy):
+        # Label text shrinks on narrow (phone) charts, where nodes crowd.
+        return (
+            alt.Chart(df)
+            .mark_text(dy=dy, fontWeight="bold",
+                       fontSize=alt.ExprRef(expr="width < 500 ? 8.5 : 10"))
+            .encode(
+                x=alt.X("x:Q", axis=None, scale=_x_scale),
+                y=alt.Y("y:Q", axis=None, scale=_y_scale),
+                text="label:N",
+            )
+        )
+
+    # Labels above their node, except the few placed below to avoid
+    # overlaps (see the layout cell).
+    _labels = (_label_layer(_node_df[~_node_df["below"]], -14)
+               + _label_layer(_node_df[_node_df["below"]], 15))
 
     # This chart is a node-link diagram (no quantitative axes), so we
     # override the prism_lite y-grid that helps the line/bar charts.
