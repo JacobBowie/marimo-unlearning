@@ -1,7 +1,10 @@
-# Social card brief: `/unlearning/social-card.png`
+# Social card brief: `deploy/social-card.png`
 
-A 1200×630 PNG used for OG/Twitter previews when the page is shared.
-Lives at `/unlearning/social-card.png` on the deployed portfolio.
+A 1200×630 PNG for link previews. **Built (2026-10-16)** from the notebook's own
+data with `CARD=1 uv run --script scripts/render_hero.py`, which writes
+`deploy/social-card.png` (pattern 2 below). It is the GitHub repo's social
+preview image. The portfolio page's own OG tags live in jacobbowie-site
+(`unlearning/og_metadata.html`) and currently use the hero image instead.
 
 ## What it should show
 
@@ -47,9 +50,9 @@ Bottom-right, smaller:
 1. **Screenshot the notebook** (fastest). Open the rendered notebook, scroll
    to the graph, drag slider to step 80, take a 1200×630 screenshot of the
    region, add title overlay in any image tool.
-2. **Render programmatically**: extend `notebook.py` with a hidden cell that
-   builds the same Altair chart with `width=1200, height=630`, save SVG,
-   convert. More work; more reproducible.
+2. **Render programmatically** (the one in use): `scripts/render_hero.py`
+   rebuilds the hero chart from the notebook's data; `CARD=1` adds the title
+   overlay, drops the legend and sizes the output to exactly 1200×630.
 3. **Hand off to a designer**: if the portfolio has a design system with
    tokens (colors, type), let the design pipeline produce a card consistent
    with the rest of the site's social cards.

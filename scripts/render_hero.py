@@ -25,7 +25,10 @@ import networkx as nx
 import pandas as pd
 
 STEP = int(os.environ.get("STEP", "80"))
-OUT = Path(os.environ.get("OUT", "deploy/hero.png"))
+# CARD=1 renders the 1200x630 social card (title overlay, no legend) per
+# deploy/social_card_brief.md, instead of the README hero.
+CARD = os.environ.get("CARD") == "1"
+OUT = Path(os.environ.get("OUT", "deploy/social-card.png" if CARD else "deploy/hero.png"))
 
 # --- nodes (label, zone) -- mirrors notebook.py "32 nodes" cell -------------
 NODES = [
@@ -131,7 +134,7 @@ edge_df = pd.DataFrame(edge_rows)
 # on top of each other at this step, e.g. magic/wizard), the later one moves
 # below its node; node positions never change. Explicit, un-niced scale domains
 # make the data -> pixel mapping exact, so this overlap test matches the image.
-W, H = 1200, 600
+W, H = (1120, 455) if CARD else (1200, 600)
 _xs, _ys = node_df["x"], node_df["y"]
 _pad_x = 0.04 * (_xs.max() - _xs.min())
 _pad_y = 0.08 * (_ys.max() - _ys.min())
@@ -180,7 +183,7 @@ edges = (
             scale=alt.Scale(domain=[0, 1], range=[0.18, 0.92]), legend=None),
         color=alt.Color("kind:N",
             scale=alt.Scale(domain=list(EDGE_PALETTE), range=list(EDGE_PALETTE.values())),
-            legend=alt.Legend(title=None, orient="bottom", labelFontSize=13)),
+            legend=None if CARD else alt.Legend(title=None, orient="bottom", labelFontSize=13)),
     )
 )
 nodes = (
@@ -204,8 +207,16 @@ def _label_layer(df, dy):
 labels = (_label_layer(node_df[~node_df["below"]], LABEL_ABOVE)
           + _label_layer(node_df[node_df["below"]], LABEL_BELOW))
 
+layers = edges + nodes + labels
+if CARD:
+    # URL bottom-right, inside the plot corner (data coordinates).
+    url = alt.Chart(pd.DataFrame([{"x": X_DOMAIN[1], "y": Y_DOMAIN[0], "t": "jacobbowie.com/unlearning"}]))
+    layers = layers + url.mark_text(
+        align="right", baseline="bottom", fontSize=20, color="#6b7280", font="monospace"
+    ).encode(x=alt.X("x:Q", axis=None, scale=X_SCALE), y=alt.Y("y:Q", axis=None, scale=Y_SCALE), text="t:N")
+
 chart = (
-    (edges + nodes + labels)
+    layers
     # Layered charts SHARE color scales by default, which merges the edge-kind
     # scale (dying/preserved/growing) with the node-zone scale (hp/bridge/
     # general) into one muddy scale. Resolve them independently so node fills
@@ -216,9 +227,19 @@ chart = (
     .configure_axis(grid=False)
     .configure_view(stroke=None)
 )
+if CARD:
+    chart = chart.properties(
+        padding=40,
+        title=alt.TitleParams(
+            text="Who's Harry Potter?",
+            subtitle="An interactive walk through LLM unlearning",
+            anchor="start", fontSize=52, subtitleFontSize=26,
+            subtitleColor="#4b5563", offset=12,
+        ),
+    )
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-chart.save(str(OUT), scale_factor=2.0)
+chart.save(str(OUT), scale_factor=1.0 if CARD else 2.0)
 print(f"wrote {OUT} (step {STEP}, {len(edge_rows)} edges drawn). VERIFY IT VISUALLY.")
 print(f"labels moved below their node: {_below or 'none'}")
 if _unresolved:
