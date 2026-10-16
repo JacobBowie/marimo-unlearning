@@ -16,3 +16,15 @@ Thumbs.db
 .vscode/
 README.md
 SKETCHES_README.md
+# Build output: large, regenerable, never needed in the image.
+dist/
+# Local-only internal docs (also gitignored); keep them out of any build context.
+CLAUDE.md
+CURRENT_STATE.md
+_PORTFOLIO_BRIEF.md
+POLISH_PUNCHLIST.md
+notes/
+claims/
+deploy/HANDOFF.md
+deploy/NETLIFY_HANDOFF.md
+deploy/NEXT_SESSION_WIRE_INTO_SITE.md

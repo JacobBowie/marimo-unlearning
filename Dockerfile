@@ -7,6 +7,14 @@
 # Verified 2026-06-02: `docker compose build` succeeds and `docker compose up`
 # serves marimo on http://localhost:2718 (HTTP 200). The venv is held at
 # /opt/venv so the compose bind-mount of the source does not shadow it.
+#
+# Base image choices (recorded 2026-10-16):
+# - python3.11 matches `.python-version`, which local builds and CI also use,
+#   so every path that builds the shipped bundle runs the same Python.
+# - The uv version FLOATS on purpose. uv.lock pins the dependencies; the uv
+#   binary only reads the lock, and a newer uv can always read a lock an older
+#   uv wrote. Pinning uv is what breaks: a pin older than the lock's format
+#   revision cannot read it. CI's setup-uv floats the same way.
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
